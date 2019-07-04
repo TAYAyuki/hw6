@@ -89,10 +89,44 @@ class Game:
 		        | self.__UpdateBoardDirection(pieces, x, y, -1, -1)):
                         # Nothing was captured. Move is invalid.
                         return None
-                
+
                 # Something was captured. Move is valid.
                 new_board["Next"] = 3 - self.Next()
 		return Game(board=new_board)
+
+	def CountBlacek_White(self,g,color):
+		counter = 0
+		for piece in g._board["Pieces"]:
+			counter += piece.count(color)
+		return counter
+
+	def WorstScore(self,player):
+	    if player == 1:
+	        return 70
+	    else:
+	        return -70
+
+
+	def MinMaxScore(self, depth, g):
+		best_move = {"Where":[0,0],"As":1}
+		valid_moves = self.ValidMoves()
+		player = valid_moves[0]["As"]
+		best = self.WorstScore(player)
+		if depth < 1:
+			return self.CountBlacek_White(g,1) - self.CountBlacek_White(g,2)
+		for move in valid_moves:
+			nextBoard = self.NextBoardPosition(move)
+			score = self.MinMaxScore(depth-1,nextBoard)
+			if move["As"] == 1:
+				if score > best:
+					best = score
+					best_move = move
+			elif move["As"]==2:
+				if score < best:
+					best = score
+					best_move = move
+		return best_move
+
 
 # Returns piece on the board.
 # 0 for no pieces, 1 for player 1, 2 for player 2.
@@ -123,6 +157,7 @@ def PrettyPrint(board, nl="<br>"):
 def PrettyMove(move):
 	m = move["Where"]
 	return '%s%d' % (chr(ord('A') + m[0] - 1), m[1])
+
 
 class MainHandler(webapp2.RequestHandler):
     # Handling GET request, just for debugging purposes.
@@ -158,11 +193,12 @@ Paste JSON here:<p/><textarea name=json cols=80 rows=24></textarea>
     		self.response.write("PASS")
     	else:
     		# Chooses a valid move randomly if available.
-                # TO STEP STUDENTS:
-                # You'll probably want to change how this works, to do something
-                # more clever than just picking a random move.
-	    	move = random.choice(valid_moves)
-    		self.response.write(PrettyMove(move))
+			# TO STEP STUDENTS:
+			# You'll probably want to change how this works, to do something
+			# more clever than just picking a random move.
+			#move = random.choice(valid_moves)
+			best_move = g.MinMaxScore(3, g)
+			self.response.write(PrettyMove(best_move))
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler)
